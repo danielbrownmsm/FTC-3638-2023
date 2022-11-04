@@ -1,0 +1,223 @@
+package org.firstinspires.ftc.teamcode.subsystems;
+
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+
+import java.util.List;
+import java.util.ArrayList;
+
+import org.firstinspires.ftc.teamcode.Subsystem;
+import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+import org.opencv.core.MatOfPoint;
+
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Core;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvPipeline;
+
+
+//import org.firstinspires.ftc.teamcode.control.PIDController;
+import org.firstinspires.ftc.teamcode.Constants;
+
+/**
+ * The vision-processing subsystem
+ * We use the EasyOpenCV package, because I'm already familiar with OpenCV
+ * and because it's really easy to import and use with FTC code
+ * I'll admit some of it is a little hard to get working with the FTC control system,
+ * but once you get the hang of it it's a really nice package
+ */
+public class Vision extends Subsystem {
+    private OpenCvCamera camera;
+    private Telemetry telemetry;
+
+    private ConeZonePipeline coneZonePipeline;
+
+    /**
+     * Vision subsystem, to hold the related functions
+     * The actual pipeline is contained in a subclass, because that's how the example code does it
+     * @param telemetry a telemetry object so we can print debug values
+     * @param hardwareMap hardware map object to get the camera object
+     */
+    public Vision(Telemetry telemetry, HardwareMap hardwareMap) {
+        this.telemetry = telemetry;
+
+        // example/template code, just copy and pasted
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        WebcamName webcamName = hardwareMap.get(WebcamName.class, "Webcam1"); // configuration file has "Webcam1" as its name
+        camera = OpenCvCameraFactory.getInstance().createWebcam(webcamName, cameraMonitorViewId);
+    }
+
+    /**
+     * More template/example code
+     */
+    @Override
+    public void init() {
+        camera.openCameraDeviceAsync(
+            new OpenCvCamera.AsyncCameraOpenListener() {
+                @Override
+                public void onOpened() {
+                    /**
+                     * Resolution parameters and orientation parameter
+                     */
+                    camera.startStreaming(752, 416, OpenCvCameraRotation.UPRIGHT);
+                    camera.setPipeline(coneZonePipeline);
+                }
+
+                @Override
+                public void onError(int errorCode) {
+                    //TODO do something here or something
+                    // idk what but y'know
+                }
+            }
+        );
+    }
+
+    /**
+     * Wrapper method for the actual OpenCV pipeline
+     * 1 is left, 2 is straight, 3 is right
+     * -1 means have not yet acquired a target
+     * @return what zone to drive to, based on the signal sleeve
+     */
+    public int getConeZone() {
+        return coneZonePipeline.getConeZone();
+    }
+
+    /**
+     * Returns if there is a target in view, based on the OpenCV pipeline
+     * having identified a zone yet
+     * @return if there has been a target in view
+     */
+    public boolean hasTargetInView() {
+        return coneZonePipeline.getConeZone() > -1;
+    }
+
+    /**
+     * Stops the camera pipeline
+     * useful for freeing up resources and not crashing the app and stuff
+     */
+    public void stopPipeline() {
+        camera.stopStreaming();
+    }
+
+    @Override
+    public void periodic() {
+        telemetry.addData("target hub level", getConeZone());
+        // honestly we don't do much here. Everything's already called automatically with the pipeline and stuff
+        //TODO telemetry
+    }
+
+
+
+    /**
+     * A child/subclass/whatever to hold the
+     */
+    protected class ConeZonePipeline extends OpenCvPipeline {
+        boolean viewportPaused = false;
+
+        // the matrix to store the processed image
+        private Mat matBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+//        private Mat matGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+//        private Mat matPurple = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+
+//        // matrix to store the bitmask returned by the inRange function
+//        Mat maskBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+//        Mat maskGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+//        Mat maskPurple = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+
+        // for contours, idk why you need it but you do
+//        Mat hierarchy = new Mat();
+
+        // a list of all the contours
+//        List<MatOfPoint> contours = new ArrayList<>();
+
+        // lower and upper bounds for the inRange we do later to filter for the colors
+//        Scalar lower_black = new Scalar(130, 110, 155);
+//        Scalar upper_black = new Scalar(140, 255, 255);
+
+        // kernel for blurring
+//        Mat kernel = new Mat();
+
+        // size for blurring
+//        Size size = new Size(3, 3);
+
+        // to store the largest contour (we loop through all of them to find the largest)
+//        double maxVal = 0;
+//        int maxValId = 0;
+        int coneZone = -1;
+        int lastConeZone = -1;
+
+        public int getConeZone() {
+            // this logic so we don't flip between actual and -1 really quickly a whole bunch
+            if (coneZone > 0) {
+                lastConeZone = coneZone;
+                return coneZone;
+            }
+            return lastConeZone;
+        }
+
+        @Override
+        public Mat processFrame(Mat input) {
+
+
+            // convert to HSV from native openCV
+            Imgproc.cvtColor(input, matBlack, Imgproc.COLOR_BGR2HSV);
+
+
+
+            //Imgproc.blur(processed, processed, size); // don't use blur for right now
+//            Core.inRange(matBlack, LOWER, UPPER, mask); // filter for colors in our range
+//            Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
+//            Imgproc.erode(mask, mask, kernel); // erode the bitmask returned by the inRange()
+//            Core.bitwise_and(matBlack, matBlack, input, mask); // apply the mask so only the filtered part shows in the processed matrix
+
+//            Imgproc.findContours(mask, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
+
+//            maxVal = 0;
+//            maxValId = 0;
+//            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+//                //Imgproc.drawContours(processed, contours, contourIdx, color);
+//                Rect rect = Imgproc.boundingRect(contours.get(contourIdx));
+//                double area = rect.width * rect.height;
+//
+//                if ((rect.height - rect.width * 1.2) < 50) {
+//                    //if (rect.y > 200) {
+//                    if (area > maxVal) {
+//                        maxVal = area;
+//                        maxValId = contourIdx;
+//                    }
+//                    //}
+//                }
+//            }
+//            if (maxValId > 0 && contours.size() > 0 && maxValId < contours.size()) {
+//                Rect largestRect = Imgproc.boundingRect(contours.get(maxValId));
+//
+//                if (largestRect.x > 500) {
+//                    Imgproc.rectangle(processed, largestRect, level3Color, 5);
+//                    targetHubAutoLevel = 3;
+//                } else if (350 < largestRect.x && largestRect.x < 500) {
+//                    Imgproc.rectangle(processed, largestRect, level2Color, 5);
+//                    targetHubAutoLevel = 2;
+//                } else if (0 < largestRect.x && largestRect.x < 350) {
+//                    Imgproc.rectangle(processed, largestRect, level1Color, 5);
+//                    targetHubAutoLevel = 1;
+//                } else {
+//                    // set it to -1 here? but like flickering between -1 and actual?
+//                }
+//            }
+//            contours.clear();
+            //hierarchy.clear();
+
+
+
+
+
+            return matBlack;
+        }
+    }
+}
