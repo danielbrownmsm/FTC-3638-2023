@@ -46,17 +46,17 @@ public class MainTeleOp extends OpMode {
 
         drivetrain.drive(drive, strafe, steer);
 
-        if (gamepad1.left_bumper) {
+        if (gamepad2.left_bumper) {
             intake.setIntake(1);
-        } else if (gamepad1.right_bumper) {
+        } else if (gamepad2.left_bumper) {
             intake.setIntake(-1);
         } else {
             intake.setIntake(0);
         }
 
-        if (gamepad1.dpad_up) {
+        if (gamepad2.dpad_up) {
             intake.raise();
-        } else if (gamepad1.dpad_down) {
+        } else if (gamepad2.dpad_down) {
             intake.lower();
         } else {
             // nothing because periodic() will handle everything except no because we're not doing that rn
