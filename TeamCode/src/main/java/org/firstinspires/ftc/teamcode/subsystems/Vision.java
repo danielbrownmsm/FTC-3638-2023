@@ -122,33 +122,46 @@ public class Vision extends Subsystem {
 
         // the matrix to store the processed image
         private Mat matBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
-//        private Mat matGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
-//        private Mat matPurple = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+        private Mat matGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+        private Mat matPurple = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
 
-//        // matrix to store the bitmask returned by the inRange function
-//        Mat maskBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
-//        Mat maskGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
-//        Mat maskPurple = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+        // matrix to hold the thing we end up displaying
+        private Mat matDisplay = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+
+        // matrix to store the bitmask returned by the inRange function
+        Mat maskBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+        Mat maskGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
+        Mat maskPurple = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
 
         // for contours, idk why you need it but you do
-//        Mat hierarchy = new Mat();
+        Mat hierarchy = new Mat();
 
         // a list of all the contours
-//        List<MatOfPoint> contours = new ArrayList<>();
+        List<MatOfPoint> contours = new ArrayList<>();
 
-        // lower and upper bounds for the inRange we do later to filter for the colors
-//        Scalar lower_black = new Scalar(130, 110, 155);
-//        Scalar upper_black = new Scalar(140, 255, 255);
+        //  lower and upper bounds for the inRange we do later to filter for the colors
+        Scalar lower_black = new Scalar(130, 110, 155);
+        Scalar upper_black = new Scalar(140, 255, 255);
+
+        Scalar lower_purple = new Scalar(130, 110, 155);
+        Scalar upper_purple = new Scalar(140, 255, 255);
+
+        Scalar lower_green = new Scalar(130, 110, 155);
+        Scalar upper_green = new Scalar(140, 255, 255);
 
         // kernel for blurring
-//        Mat kernel = new Mat();
+        Mat kernel = new Mat();
 
         // size for blurring
-//        Size size = new Size(3, 3);
+        Size size = new Size(3, 3);
 
         // to store the largest contour (we loop through all of them to find the largest)
-//        double maxVal = 0;
-//        int maxValId = 0;
+        double maxValBlack = 0;
+        double maxValGreen = 0;
+        double maxValPurple = 0;
+        int maxValIdBlack = 0;
+        int maxValIdGreen = 0;
+        int maxValIdPurple = 0;
         int coneZone = -1;
         int lastConeZone = -1;
 
@@ -167,36 +180,105 @@ public class Vision extends Subsystem {
 
             // convert to HSV from native openCV
             Imgproc.cvtColor(input, matBlack, Imgproc.COLOR_BGR2HSV);
+            Imgproc.cvtColor(input, matGreen, Imgproc.COLOR_BGR2HSV);
+            Imgproc.cvtColor(input, matPurple, Imgproc.COLOR_BGR2HSV);
 
 
 
-            //Imgproc.blur(processed, processed, size); // don't use blur for right now
-//            Core.inRange(matBlack, LOWER, UPPER, mask); // filter for colors in our range
-//            Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
-//            Imgproc.erode(mask, mask, kernel); // erode the bitmask returned by the inRange()
-//            Core.bitwise_and(matBlack, matBlack, input, mask); // apply the mask so only the filtered part shows in the processed matrix
+//            Imgproc.blur(processed, processed, size); // don't use blur for right now
 
-//            Imgproc.findContours(mask, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
+            // filter for colors in our range
+            Core.inRange(matBlack, lower_black, upper_black, maskBlack);
+            Core.inRange(matGreen, lower_green, upper_green, maskGreen);
+            Core.inRange(matPurple, lower_purple, upper_purple, maskPurple);
 
-//            maxVal = 0;
-//            maxValId = 0;
-//            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-//                //Imgproc.drawContours(processed, contours, contourIdx, color);
-//                Rect rect = Imgproc.boundingRect(contours.get(contourIdx));
-//                double area = rect.width * rect.height;
-//
-//                if ((rect.height - rect.width * 1.2) < 50) {
-//                    //if (rect.y > 200) {
-//                    if (area > maxVal) {
-//                        maxVal = area;
-//                        maxValId = contourIdx;
-//                    }
-//                    //}
-//                }
-//            }
+            // convert back to regular color (so we can display to the driver station)
+            //Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
+
+            // don't blur for now
+            //Imgproc.erode(mask, mask, kernel); // erode the bitmask returned by the inRange()
+
+            // apply the mask so only the parts that got through the inRange are displayed
+            //Core.bitwise_and(matBlack, matBlack, input, maskBlack); // apply the mask so only the filtered part shows in the processed matrix
+
+
+            // time for the actual computer vision
+            // find contours
+            Imgproc.findContours(maskBlack, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
+
+            maxValBlack = 0;
+            maxValIdBlack = 0;
+            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+                //Imgproc.drawContours(processed, contours, contourIdx, color);
+                Rect rect = Imgproc.boundingRect(contours.get(contourIdx));
+                double area = rect.width * rect.height;
+
+                // make sure the rectangle is in our little search area
+                if (rect.y > 200 && rect.y < 200 && rect.x > 200 && rect.x < 200) {
+                    if (area > maxValBlack) { // if the area is larger than our current largest area
+                        maxValBlack = area;
+                        maxValIdBlack = contourIdx; // id of the contour in the list so we can retrieve it
+                    }
+                }
+            }
+
+            Imgproc.findContours(maskGreen, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
+
+            maxValGreen = 0;
+            maxValIdGreen = 0;
+            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+                //Imgproc.drawContours(processed, contours, contourIdx, color);
+                Rect rect = Imgproc.boundingRect(contours.get(contourIdx));
+                double area = rect.width * rect.height;
+
+                // make sure the rectangle is in our little search area
+                if (rect.y > 200 && rect.y < 200 && rect.x > 200 && rect.x < 200) {
+                    if (area > maxValGreen) { // if the area is larger than our current largest area
+                        maxValGreen = area;
+                        maxValIdGreen = contourIdx; // id of the contour in the list so we can retrieve it
+                    }
+                }
+            }
+
+            Imgproc.findContours(maskPurple, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
+
+            maxValPurple = 0;
+            maxValIdPurple = 0;
+            for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+                //Imgproc.drawContours(processed, contours, contourIdx, color);
+                Rect rect = Imgproc.boundingRect(contours.get(contourIdx));
+                double area = rect.width * rect.height;
+
+                // make sure the rectangle is in our little search area
+                if (rect.y > 200 && rect.y < 200 && rect.x > 200 && rect.x < 200) {
+                    if (area > maxValPurple) { // if the area is larger than our current largest area
+                        maxValPurple = area;
+                        maxValIdPurple = contourIdx; // id of the contour in the list so we can retrieve it
+                    }
+                }
+            }
+
+
+
+            // time to decide what zone it is
+            if (maxValPurple > maxValBlack) { // if purple is larger than black
+                if (maxValGreen > maxValPurple) { // and green is larger than purple
+                    coneZone = 1; // green
+                } else { // otherwise, purple is larger than green and larger than black
+                    coneZone = 2; // purple
+                }
+            } else if (maxValGreen > maxValBlack){ // elif green is larger than black, and purple is smaller than black (because of the first if statement)
+                coneZone = 2; // then it's green
+            } else {
+                coneZone = 3; // well, purple is smaller than black, and green is smaller than black, so black
+            }
+
+
+            // if the contour we found is valid (like, we actually saw something)
 //            if (maxValId > 0 && contours.size() > 0 && maxValId < contours.size()) {
 //                Rect largestRect = Imgproc.boundingRect(contours.get(maxValId));
-//
+
+                // draw a rectangle around the contour in the appropriate color
 //                if (largestRect.x > 500) {
 //                    Imgproc.rectangle(processed, largestRect, level3Color, 5);
 //                    targetHubAutoLevel = 3;
@@ -210,12 +292,9 @@ public class Vision extends Subsystem {
 //                    // set it to -1 here? but like flickering between -1 and actual?
 //                }
 //            }
-//            contours.clear();
-            //hierarchy.clear();
 
-
-
-
+            contours.clear();
+            hierarchy.setTo(Scalar.all(0)); //???
 
             return matBlack;
         }
