@@ -140,14 +140,15 @@ public class Vision extends Subsystem {
         List<MatOfPoint> contours = new ArrayList<>();
 
         //  lower and upper bounds for the inRange we do later to filter for the colors
-        Scalar lower_black = new Scalar(130, 110, 155);
-        Scalar upper_black = new Scalar(140, 255, 255);
+        // values are in HSV
+        Scalar lower_black = new Scalar(0, 0, 0);
+        Scalar upper_black = new Scalar(360, 1, .1);
 
-        Scalar lower_purple = new Scalar(130, 110, 155);
-        Scalar upper_purple = new Scalar(140, 255, 255);
+        Scalar lower_purple = new Scalar(260, .4, .3);
+        Scalar upper_purple = new Scalar(280, 1, 1);
 
-        Scalar lower_green = new Scalar(130, 110, 155);
-        Scalar upper_green = new Scalar(140, 255, 255);
+        Scalar lower_green = new Scalar(90, .66, .46);
+        Scalar upper_green = new Scalar(132, 1, 1);
 
         // kernel for blurring
         Mat kernel = new Mat();
@@ -250,7 +251,7 @@ public class Vision extends Subsystem {
                 double area = rect.width * rect.height;
 
                 // make sure the rectangle is in our little search area
-                if (rect.y > 200 && rect.y < 200 && rect.x > 200 && rect.x < 200) {
+                if (rect.y > 260 && rect.y < 460 && rect.x > 440 && rect.x < 840) {
                     if (area > maxValPurple) { // if the area is larger than our current largest area
                         maxValPurple = area;
                         maxValIdPurple = contourIdx; // id of the contour in the list so we can retrieve it
@@ -263,13 +264,17 @@ public class Vision extends Subsystem {
             // time to decide what zone it is
             if (maxValPurple > maxValBlack) { // if purple is larger than black
                 if (maxValGreen > maxValPurple) { // and green is larger than purple
+                    telemetry.addData("color", "green");
                     coneZone = 1; // green
                 } else { // otherwise, purple is larger than green and larger than black
+                    telemetry.addData("color", "purple");
                     coneZone = 2; // purple
                 }
             } else if (maxValGreen > maxValBlack){ // elif green is larger than black, and purple is smaller than black (because of the first if statement)
+                telemetry.addData("color", "green");
                 coneZone = 2; // then it's green
             } else {
+                telemetry.addData("color", "black");
                 coneZone = 3; // well, purple is smaller than black, and green is smaller than black, so black
             }
 
@@ -277,8 +282,8 @@ public class Vision extends Subsystem {
             // if the contour we found is valid (like, we actually saw something)
 //            if (maxValId > 0 && contours.size() > 0 && maxValId < contours.size()) {
 //                Rect largestRect = Imgproc.boundingRect(contours.get(maxValId));
-
-                // draw a rectangle around the contour in the appropriate color
+//
+//                // draw a rectangle around the contour in the appropriate color
 //                if (largestRect.x > 500) {
 //                    Imgproc.rectangle(processed, largestRect, level3Color, 5);
 //                    targetHubAutoLevel = 3;
@@ -294,7 +299,7 @@ public class Vision extends Subsystem {
 //            }
 
             contours.clear();
-            hierarchy.setTo(Scalar.all(0)); //???
+//            hierarchy.setTo(Scalar.all(0)); //???
 
             return matBlack;
         }

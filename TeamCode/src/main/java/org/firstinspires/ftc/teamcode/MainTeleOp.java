@@ -16,7 +16,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 
 /**
  * A simple tele-op program I threw together so we could test our intake prototype
- * The robot consists of a simple (very janky) chassis that looks kind of like a modified 
+ * The robot consists of a simple (very janky) chassis that looks kind of like a modified strafer chassis
  * Hardware configuration
  */
 @TeleOp(name="Tele-Op", group="test")
@@ -46,17 +46,17 @@ public class MainTeleOp extends OpMode {
 
         drivetrain.drive(drive, strafe, steer);
 
-        if (gamepad2.left_bumper) {
+        if (gamepad1.left_bumper) {
             intake.setIntake(1);
-        } else if (gamepad2.left_bumper) {
+        } else if (gamepad1.right_bumper) {
             intake.setIntake(-1);
         } else {
             intake.setIntake(0);
         }
 
-        if (gamepad2.dpad_up) {
+        if (gamepad1.dpad_up) {
             intake.raise();
-        } else if (gamepad2.dpad_down) {
+        } else if (gamepad1.dpad_down) {
             intake.lower();
         } else {
             // nothing because periodic() will handle everything except no because we're not doing that rn

@@ -118,7 +118,9 @@ public class Intake extends Subsystem {
 
         // keep this number small because gravity is helping the slide move down
         // we don't want to slam it into the robot/ground/whatever
-        slideMotor.setPower(0.1);
+        // but now our motor is geared to be a hefty boi so we can make it a little faster because
+        // internal resistance from the gears
+        slideMotor.setPower(0.2);
     }
 
     /**
