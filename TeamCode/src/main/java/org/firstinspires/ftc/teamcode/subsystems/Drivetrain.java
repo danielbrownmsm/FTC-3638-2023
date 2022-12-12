@@ -31,7 +31,7 @@ public class Drivetrain extends Subsystem {
     /**
      * Speed modifier that gets multiplied to tele-op drive methods, to reduce twitchiness
      */
-    private static final double speedMod = 0.8;
+    private static final double speedMod = 0.6;
 
     public Drivetrain(Telemetry telemetry, HardwareMap hardwareMap) {
         this.telemetry = telemetry;

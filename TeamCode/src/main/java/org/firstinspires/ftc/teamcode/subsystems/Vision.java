@@ -66,6 +66,7 @@ public class Vision extends Subsystem {
                      * Resolution parameters and orientation parameter
                      */
                     camera.startStreaming(752, 416, OpenCvCameraRotation.UPRIGHT);
+                    ConeZonePipeline coneZonePipeline = new ConeZonePipeline();
                     camera.setPipeline(coneZonePipeline);
                 }
 
@@ -120,6 +121,11 @@ public class Vision extends Subsystem {
     protected class ConeZonePipeline extends OpenCvPipeline {
         boolean viewportPaused = false;
 
+        private int x = 350;
+        private int width = 100;
+        private int y = 300;
+        private int height = 100;
+
         // the matrix to store the processed image
         private Mat matBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
         private Mat matGreen = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
@@ -142,13 +148,13 @@ public class Vision extends Subsystem {
         //  lower and upper bounds for the inRange we do later to filter for the colors
         // values are in HSV
         Scalar lower_black = new Scalar(0, 0, 0);
-        Scalar upper_black = new Scalar(360, 1, .1);
+        Scalar upper_black = new Scalar(255, 255, 50);
 
-        Scalar lower_purple = new Scalar(260, .4, .3);
-        Scalar upper_purple = new Scalar(280, 1, 1);
+        Scalar lower_purple = new Scalar(140, 0, 0);
+        Scalar upper_purple = new Scalar(255, 255, 255);
 
-        Scalar lower_green = new Scalar(90, .66, .46);
-        Scalar upper_green = new Scalar(132, 1, 1);
+        Scalar lower_green = new Scalar(0, 100, 75);
+        Scalar upper_green = new Scalar(70, 255, 255);
 
         // kernel for blurring
         Mat kernel = new Mat();
@@ -194,13 +200,13 @@ public class Vision extends Subsystem {
             Core.inRange(matPurple, lower_purple, upper_purple, maskPurple);
 
             // convert back to regular color (so we can display to the driver station)
-            //Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
+            Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
 
             // don't blur for now
-            //Imgproc.erode(mask, mask, kernel); // erode the bitmask returned by the inRange()
+            Imgproc.erode(maskBlack, maskBlack, kernel); // erode the bitmask returned by the inRange()
 
             // apply the mask so only the parts that got through the inRange are displayed
-            //Core.bitwise_and(matBlack, matBlack, input, maskBlack); // apply the mask so only the filtered part shows in the processed matrix
+//            Core.bitwise_and(matGreen, matGreen, input, maskGreen); // apply the mask so only the filtered part shows in the processed matrix
 
 
             // time for the actual computer vision
@@ -215,7 +221,8 @@ public class Vision extends Subsystem {
                 double area = rect.width * rect.height;
 
                 // make sure the rectangle is in our little search area
-                if (rect.y > 200 && rect.y < 200 && rect.x > 200 && rect.x < 200) {
+                if (rect.y > y && rect.y < y+height && rect.x > x && rect.x < x+width) {
+                    Imgproc.rectangle(input, rect, new Scalar(255, 0, 0), 5);
                     if (area > maxValBlack) { // if the area is larger than our current largest area
                         maxValBlack = area;
                         maxValIdBlack = contourIdx; // id of the contour in the list so we can retrieve it
@@ -223,6 +230,7 @@ public class Vision extends Subsystem {
                 }
             }
 
+            contours.clear();
             Imgproc.findContours(maskGreen, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
 
             maxValGreen = 0;
@@ -233,14 +241,17 @@ public class Vision extends Subsystem {
                 double area = rect.width * rect.height;
 
                 // make sure the rectangle is in our little search area
-                if (rect.y > 200 && rect.y < 200 && rect.x > 200 && rect.x < 200) {
+                if (rect.y > y && rect.y < y+height && rect.x > x && rect.x < x+width) {
+                    Imgproc.rectangle(input, rect, new Scalar(0, 255, 0), 5);
                     if (area > maxValGreen) { // if the area is larger than our current largest area
                         maxValGreen = area;
                         maxValIdGreen = contourIdx; // id of the contour in the list so we can retrieve it
                     }
                 }
             }
+            telemetry.addData("green max val", maxValGreen);
 
+            contours.clear();
             Imgproc.findContours(maskPurple, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE); // find contours
 
             maxValPurple = 0;
@@ -251,7 +262,8 @@ public class Vision extends Subsystem {
                 double area = rect.width * rect.height;
 
                 // make sure the rectangle is in our little search area
-                if (rect.y > 260 && rect.y < 460 && rect.x > 440 && rect.x < 840) {
+                if (rect.y > y && rect.y < y+height && rect.x > x && rect.x < x+width) {
+                    Imgproc.rectangle(input, rect, new Scalar(0, 255, 255), 5);
                     if (area > maxValPurple) { // if the area is larger than our current largest area
                         maxValPurple = area;
                         maxValIdPurple = contourIdx; // id of the contour in the list so we can retrieve it
@@ -259,7 +271,7 @@ public class Vision extends Subsystem {
                 }
             }
 
-
+            telemetry.addData("purple max val", maxValPurple);
 
             // time to decide what zone it is
             if (maxValPurple > maxValBlack) { // if purple is larger than black
@@ -277,18 +289,22 @@ public class Vision extends Subsystem {
                 telemetry.addData("color", "black");
                 coneZone = 3; // well, purple is smaller than black, and green is smaller than black, so black
             }
+            telemetry.update();
 
 
             // if the contour we found is valid (like, we actually saw something)
 //            if (maxValId > 0 && contours.size() > 0 && maxValId < contours.size()) {
-//                Rect largestRect = Imgproc.boundingRect(contours.get(maxValId));
+//            Rect largestRect = Imgproc.boundingRect(contours.get(maxValIdGreen));
+//            largestRect = Imgproc.boundingRect(contours.get(maxValIdGreen));
+//            largestRect = Imgproc.boundingRect(contours.get(maxValIdGreen));
 //
 //                // draw a rectangle around the contour in the appropriate color
 //                if (largestRect.x > 500) {
-//                    Imgproc.rectangle(processed, largestRect, level3Color, 5);
+            //rect.y > 500 && rect.y < 720 && rect.x > 440 && rect.x < 840
+                    Imgproc.rectangle(input, new Rect(x, y, width, height), new Scalar(0, 255, 0), 5);
 //                    targetHubAutoLevel = 3;
 //                } else if (350 < largestRect.x && largestRect.x < 500) {
-//                    Imgproc.rectangle(processed, largestRect, level2Color, 5);
+//                    Imgproc.rectangle(input, largestRect, new Scalar(0, 255, 0), 5);
 //                    targetHubAutoLevel = 2;
 //                } else if (0 < largestRect.x && largestRect.x < 350) {
 //                    Imgproc.rectangle(processed, largestRect, level1Color, 5);
@@ -301,7 +317,7 @@ public class Vision extends Subsystem {
             contours.clear();
 //            hierarchy.setTo(Scalar.all(0)); //???
 
-            return matBlack;
+            return maskGreen;
         }
     }
 }

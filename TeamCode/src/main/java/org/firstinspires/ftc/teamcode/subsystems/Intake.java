@@ -120,7 +120,7 @@ public class Intake extends Subsystem {
         // we don't want to slam it into the robot/ground/whatever
         // but now our motor is geared to be a hefty boi so we can make it a little faster because
         // internal resistance from the gears
-        slideMotor.setPower(0.2);
+        slideMotor.setPower(0.4);
     }
 
     /**
@@ -130,6 +130,10 @@ public class Intake extends Subsystem {
     public void freeze() {
         // this might need to be smaller though
         slideMotor.setPower(-0.1);
+    }
+
+    public void stopSlide() {
+        slideMotor.setPower(0);
     }
 
     @Override
