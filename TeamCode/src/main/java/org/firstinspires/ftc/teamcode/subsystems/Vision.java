@@ -51,6 +51,7 @@ public class Vision extends Subsystem {
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         WebcamName webcamName = hardwareMap.get(WebcamName.class, "Webcam1"); // configuration file has "Webcam1" as its name
         camera = OpenCvCameraFactory.getInstance().createWebcam(webcamName, cameraMonitorViewId);
+        coneZonePipeline = new ConeZonePipeline();
     }
 
     /**
@@ -66,7 +67,7 @@ public class Vision extends Subsystem {
                      * Resolution parameters and orientation parameter
                      */
                     camera.startStreaming(752, 416, OpenCvCameraRotation.UPRIGHT);
-                    ConeZonePipeline coneZonePipeline = new ConeZonePipeline();
+                    coneZonePipeline = new ConeZonePipeline();
                     camera.setPipeline(coneZonePipeline);
                 }
 
@@ -118,13 +119,13 @@ public class Vision extends Subsystem {
     /**
      * A child/subclass/whatever to hold the
      */
-    protected class ConeZonePipeline extends OpenCvPipeline {
+    protected class  ConeZonePipeline extends OpenCvPipeline {
         boolean viewportPaused = false;
 
         private int x = 350;
-        private int width = 100;
-        private int y = 300;
-        private int height = 100;
+        private int width = 150;
+        private int y = 225;
+        private int height = 200;
 
         // the matrix to store the processed image
         private Mat matBlack = new Mat(Constants.CAMERA_HEIGHT, Constants.CAMERA_WIDTH, 24);
@@ -148,19 +149,19 @@ public class Vision extends Subsystem {
         //  lower and upper bounds for the inRange we do later to filter for the colors
         // values are in HSV
         Scalar lower_black = new Scalar(0, 0, 0);
-        Scalar upper_black = new Scalar(255, 255, 50);
+        Scalar upper_black = new Scalar(255, 255, 40);
 
-        Scalar lower_purple = new Scalar(140, 0, 0);
-        Scalar upper_purple = new Scalar(255, 255, 255);
+        Scalar lower_purple = new Scalar(120, 100, 100);
+        Scalar upper_purple = new Scalar(255, 200, 200);
 
-        Scalar lower_green = new Scalar(0, 100, 75);
+        Scalar lower_green = new Scalar(40, 100, 75);
         Scalar upper_green = new Scalar(70, 255, 255);
 
         // kernel for blurring
         Mat kernel = new Mat();
 
         // size for blurring
-        Size size = new Size(3, 3);
+        Size size = new Size(4, 4);
 
         // to store the largest contour (we loop through all of them to find the largest)
         double maxValBlack = 0;
@@ -284,7 +285,7 @@ public class Vision extends Subsystem {
                 }
             } else if (maxValGreen > maxValBlack){ // elif green is larger than black, and purple is smaller than black (because of the first if statement)
                 telemetry.addData("color", "green");
-                coneZone = 2; // then it's green
+                coneZone = 1 ; // then it's green
             } else {
                 telemetry.addData("color", "black");
                 coneZone = 3; // well, purple is smaller than black, and green is smaller than black, so black
@@ -317,7 +318,10 @@ public class Vision extends Subsystem {
             contours.clear();
 //            hierarchy.setTo(Scalar.all(0)); //???
 
-            return maskGreen;
+            // make input HSV to debug
+//            Imgproc.cvtColor(input, input, Imgproc.COLOR_BGR2HSV);
+
+            return input;
         }
     }
 }

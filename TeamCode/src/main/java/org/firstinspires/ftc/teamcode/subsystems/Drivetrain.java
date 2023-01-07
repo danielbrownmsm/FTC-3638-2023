@@ -32,6 +32,7 @@ public class Drivetrain extends Subsystem {
      * Speed modifier that gets multiplied to tele-op drive methods, to reduce twitchiness
      */
     private static final double speedMod = 0.6;
+    private static final double teleOpSpeedMod = 0.75;
 
     public Drivetrain(Telemetry telemetry, HardwareMap hardwareMap) {
         this.telemetry = telemetry;
@@ -78,5 +79,21 @@ public class Drivetrain extends Subsystem {
         rightFront.setPower((drive + steer + strafe) * speedMod);
         leftBack.setPower((drive - steer + strafe) * speedMod);
         rightBack.setPower((drive + steer - strafe) * speedMod);
+    }
+
+    /**
+     * A simple tele-op drive method. Drives using mecanum control.
+     * Left stick controls directional movement
+     * Right stick controls steering
+     * Not field-oriented
+     * @param drive forward/backward power
+     * @param strafe left/right power
+     * @param steer turning power
+     */
+    public void driveTeleOp(double drive, double strafe, double steer) {
+        leftFront.setPower((drive * teleOpSpeedMod) - (steer * speedMod) - (strafe * speedMod));
+        rightFront.setPower((drive * teleOpSpeedMod) + (steer * speedMod) + (strafe * speedMod));
+        leftBack.setPower((drive * teleOpSpeedMod) - (steer * speedMod) + (strafe * speedMod));
+        rightBack.setPower((drive * teleOpSpeedMod) + (steer * speedMod) - (strafe * speedMod));
     }
 }
