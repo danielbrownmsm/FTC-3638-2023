@@ -31,7 +31,7 @@ public class Drivetrain extends Subsystem {
     /**
      * Speed modifier that gets multiplied to tele-op drive methods, to reduce twitchiness
      */
-    private static final double speedMod = 0.6;
+    private static final double speedMod = 0.7;
     private static final double teleOpSpeedMod = 0.75;
 
     public Drivetrain(Telemetry telemetry, HardwareMap hardwareMap) {
@@ -63,6 +63,22 @@ public class Drivetrain extends Subsystem {
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+    }
+
+    /**
+     * A simple tele-op drive method. Drives using mecanum control.
+     * Left stick controls directional movement
+     * Right stick controls steering
+     * Not field-oriented
+     * @param drive forward/backward power
+     * @param strafe left/right power
+     * @param steer turning power
+     */
+    public void driveAuto(double drive, double strafe, double steer) {
+        leftFront.setPower((drive - steer - strafe));
+        rightFront.setPower((drive + steer + strafe));
+        leftBack.setPower((drive - steer + strafe));
+        rightBack.setPower((drive + steer - strafe));
     }
 
     /**

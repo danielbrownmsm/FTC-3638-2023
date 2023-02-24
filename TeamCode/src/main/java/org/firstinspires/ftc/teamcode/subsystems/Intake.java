@@ -129,7 +129,8 @@ public class Intake extends Subsystem {
      */
     public void freeze() {
         // this might need to be smaller though
-        slideMotor.setPower(-0.1);
+//        slideMotor.setPower(-0.1);
+        slideMotor.setPower(-0.05);
     }
 
     public void stopSlide() {

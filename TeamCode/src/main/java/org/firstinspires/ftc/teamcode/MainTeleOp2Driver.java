@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.LEDs;
 
 
 /**
@@ -23,14 +24,17 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 public class MainTeleOp2Driver extends OpMode {
     private Drivetrain drivetrain;
     private Intake intake;
+    private LEDs blinkin;
 
     @Override
     public void init() {
         drivetrain = new Drivetrain(telemetry, hardwareMap);
         intake = new Intake(telemetry, hardwareMap);
+        blinkin = new LEDs(telemetry, hardwareMap);
 
         drivetrain.init();
         intake.init();
+        blinkin.init();
     }
 
     @Override
@@ -48,8 +52,10 @@ public class MainTeleOp2Driver extends OpMode {
 
         if (gamepad2.left_bumper) {
             intake.setIntake(1);
+            blinkin.SetPattern(42);
         } else if (gamepad2.right_bumper) {
             intake.setIntake(-1);
+            blinkin.SetPattern(49);
         } else {
             intake.setIntake(0);
         }

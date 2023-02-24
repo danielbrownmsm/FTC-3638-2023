@@ -149,12 +149,12 @@ public class Vision extends Subsystem {
         //  lower and upper bounds for the inRange we do later to filter for the colors
         // values are in HSV
         Scalar lower_black = new Scalar(0, 0, 0);
-        Scalar upper_black = new Scalar(255, 255, 40);
+        Scalar upper_black = new Scalar(255, 255, 50);
 
         Scalar lower_purple = new Scalar(120, 100, 100);
         Scalar upper_purple = new Scalar(255, 200, 200);
 
-        Scalar lower_green = new Scalar(40, 100, 75);
+        Scalar lower_green = new Scalar(40, 80, 70);
         Scalar upper_green = new Scalar(70, 255, 255);
 
         // kernel for blurring
@@ -201,10 +201,10 @@ public class Vision extends Subsystem {
             Core.inRange(matPurple, lower_purple, upper_purple, maskPurple);
 
             // convert back to regular color (so we can display to the driver station)
-            Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
+//            Imgproc.cvtColor(matBlack, matBlack, Imgproc.COLOR_HSV2BGR); // convert back to OpenCV native
 
             // don't blur for now
-            Imgproc.erode(maskBlack, maskBlack, kernel); // erode the bitmask returned by the inRange()
+//            Imgproc.erode(maskBlack, maskBlack, kernel); // erode the bitmask returned by the inRange()
 
             // apply the mask so only the parts that got through the inRange are displayed
 //            Core.bitwise_and(matGreen, matGreen, input, maskGreen); // apply the mask so only the filtered part shows in the processed matrix

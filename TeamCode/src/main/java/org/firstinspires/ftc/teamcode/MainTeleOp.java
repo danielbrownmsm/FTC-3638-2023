@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.LEDs;
 
 
 /**
@@ -23,14 +24,21 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 public class MainTeleOp extends OpMode {
     private Drivetrain drivetrain;
     private Intake intake;
+    private LEDs leds;
+
+    private int pattern = 0;
+    private boolean up_pressed = false;
+    private boolean down_pressed = false;
 
     @Override
     public void init() {
         drivetrain = new Drivetrain(telemetry, hardwareMap);
         intake = new Intake(telemetry, hardwareMap);
+        leds = new LEDs(telemetry, hardwareMap);
 
         drivetrain.init();
         intake.init();
+        leds.init();
     }
 
     @Override
@@ -63,7 +71,32 @@ public class MainTeleOp extends OpMode {
             intake.freeze();
         }
 
+        if (gamepad2.dpad_up) {
+            if (!up_pressed) {
+                pattern += 1;
+            }
+            up_pressed = true;
+        } else if (gamepad2.dpad_down) {
+            if (!down_pressed) {
+                pattern -= 1;
+            }
+            down_pressed = true;
+        }
+
+        up_pressed = gamepad2.dpad_up;
+        down_pressed = gamepad2.dpad_down;
+
+        if (pattern < 0) {
+            pattern = 0;
+        } else if (pattern > 100) {
+            pattern = 100;
+        }
+
+        leds.SetPattern(pattern);
+
+
         drivetrain.periodic();
         intake.periodic();
+        leds.periodic();
     }
 }
